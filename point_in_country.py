@@ -23,15 +23,6 @@ def point_in_country(latitude, longitude, country):
         [[bounds[0], bounds[2]], [bounds[1], bounds[3]]], padding=(50, 50)
     )
 
-    # Draw rectangle around the bounding box
-    folium.Rectangle(
-        bounds=[[bounds[0], bounds[2]], [bounds[1], bounds[3]]],
-        color="red",
-        weight=2,
-        fill=False,
-        opacity=1,
-    ).add_to(m)
-
     # Add a marker at the specified location
     folium.Marker(
         [latitude, longitude],

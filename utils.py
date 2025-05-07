@@ -1,3 +1,4 @@
+import json
 import folium
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
@@ -10,20 +11,33 @@ import os
 
 # bounds format: [south, north, west, east]
 country_bounding_boxes = {
-    "Southeast Asia": [-11.5, 28.5, 92, 141],
-    "Brunei": [4, 5.5, 114, 115.5],
-    "Cambodia": [10, 14.5, 102.5, 107.5],
-    "Indonesia": [-11.5, 6.5, 94, 141],
-    "Laos": [14, 22.5, 100, 107.5],
-    "Malaysia": [0.5, 8.5, 98.5, 119.5],
-    "Myanmar": [9.5, 28.5, 92, 101],
-    "Philippines": [5, 20, 116.5, 127],
-    "Singapore": [1.2, 1.5, 103.6, 104.1],
-    "Thailand": [5.5, 20.5, 97, 106],
-    "Timor-Leste": [-9.5, -8, 124, 127.5],
-    "Vietnam": [8.5, 23.5, 102, 110],
+    "southeast asia": [-11.5, 28.5, 92, 141],
+    "brunei": [4, 5.5, 114, 115.5],
+    "cambodia": [10, 14.5, 102.5, 107.5],
+    "indonesia": [-11.5, 6.5, 94, 141],
+    "laos": [14, 22.5, 100, 107.5],
+    "malaysia": [0.5, 8.5, 98.5, 119.5],
+    "myanmar": [9.5, 28.5, 92, 101],
+    "philippines": [5, 20, 116.5, 127],
+    "singapore": [1.2, 1.5, 103.6, 104.1],
+    "thailand": [5.5, 20.5, 97, 106],
+    "timor-leste": [-9.5, -8, 124, 127.5],
+    "vietnam": [8.5, 23.5, 102, 110],
 }
 
+def get_country_geojson(country):
+    # Load GeoJSON data
+    with open("countries.geojson", "r") as f:
+        countries_data = json.load(f)
+
+    # Find the country in the GeoJSON data
+    country_geojson = None
+    for feature in countries_data["features"]:
+        if feature["properties"]["NAME"].lower() == country:
+            country_geojson = feature
+            break
+    
+    return country_geojson
 
 def get_country_bounds(country):
     if country in country_bounding_boxes:
@@ -37,6 +51,12 @@ def get_country_bounds(country):
         return None
     except GeocoderTimedOut:
         return None
+
+def get_country_center(country):
+    country_bounds = get_country_bounds(country)
+    if country_bounds is None:
+        return None
+    return [(country_bounds[0] + country_bounds[1]) / 2, (country_bounds[2] + country_bounds[3]) / 2]
 
 def string_to_camel_case(string):
     return '_'.join(word.lower() for word in string.replace(' ', '_').replace('-', '_').split('_'))
