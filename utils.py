@@ -1,7 +1,6 @@
 import folium
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
-import sys
 import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -39,49 +38,17 @@ def get_country_bounds(country):
     except GeocoderTimedOut:
         return None
 
+def string_to_camel_case(string):
+    return '_'.join(word.lower() for word in string.replace(' ', '_').replace('-', '_').split('_'))
 
-def create_map(latitude, longitude, country):
+def find_next_name(filename_prefix):
+    index = 1
+    while os.path.exists(f"maps/{filename_prefix}_{index}.png"):
+        index += 1
+    return f"{filename_prefix}_{index}"
+
+def take_map_screenshot(m, filename_prefix):
     try:
-        # Get country bounds
-        bounds = get_country_bounds(country)
-        print(bounds)
-
-        center_latitude = (bounds[0] + bounds[1]) / 2
-        center_longitude = (bounds[2] + bounds[3]) / 2
-
-        # Create a map centered at the given coordinates with zoom controls disabled
-        m = folium.Map(
-            width=1000,
-            height=1000,
-            location=[center_latitude, center_longitude],
-            zoom_start=6,  # Start with a default zoom
-            zoom_control=False,
-            attribution_control=False,
-            tiles="CartoDB voyager no-labels",
-            zoom_snap=0.1,  # Allow zoom levels in 0.1 increments
-        )
-
-        # Fit bounds to show the country
-        m.fit_bounds(
-            [[bounds[0], bounds[2]], [bounds[1], bounds[3]]], padding=(50, 50)
-        )
-
-        # Draw rectangle around the bounding box
-        folium.Rectangle(
-            bounds=[[bounds[0], bounds[2]], [bounds[1], bounds[3]]],
-            color="red",
-            weight=2,
-            fill=False,
-            opacity=1,
-        ).add_to(m)
-
-        # Add a marker at the specified location
-        folium.Marker(
-            [latitude, longitude],
-            popup=f"Location: {latitude}, {longitude}",
-            icon=folium.Icon(color="red", icon="info-sign"),
-        ).add_to(m)
-
         # Add custom CSS to make the map container square and hide controls
         m.get_root().html.add_child(
             folium.Element("""
@@ -135,8 +102,14 @@ def create_map(latitude, longitude, country):
         # Wait for the map to load and zoom to be applied
         time.sleep(2)
 
+        if not os.path.exists("maps"):
+            os.makedirs("maps")
+
+        print(string_to_camel_case(filename_prefix))
+        filename = find_next_name(string_to_camel_case(filename_prefix))
+
         # Take screenshot
-        output_file = f"{country.lower()}_map.png"
+        output_file = f"maps/{filename}.png"
         driver.save_screenshot(output_file)
 
         # Clean up
@@ -147,25 +120,3 @@ def create_map(latitude, longitude, country):
 
     except Exception as e:
         print(f"Error creating map: {str(e)}")
-
-
-def main():
-    if len(sys.argv) != 4:
-        print("Usage: python map.py <latitude> <longitude> <country>")
-        print("Example: python map.py 40.7128 -74.0060 'United States'")
-        sys.exit(1)
-
-    try:
-        latitude = float(sys.argv[1])
-        longitude = float(sys.argv[2])
-        country = sys.argv[3]
-
-        create_map(latitude, longitude, country)
-
-    except ValueError:
-        print("Error: Latitude and longitude must be valid numbers")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
